@@ -8,7 +8,12 @@ class LibraryDatabase {
   LibraryDatabase._init();
 
   Future<Database> get database async {
-    if (_database != null) return _database!;
+    if (_database != null) {
+      print('SQLite: база данных уже открыта');
+      return _database!;
+    }
+
+    print('SQLite: открытие базы данных');
     _database = await _initDB('library.db');
     return _database!;
   }
@@ -25,14 +30,13 @@ class LibraryDatabase {
   }
 
   Future<void> _createDB(Database db, int version) async {
-    print('=== SQLite: создание базы данных ===');
+    print('SQLite: база данных создаётся');
     await db.execute('''
       CREATE TABLE authors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         full_name TEXT NOT NULL
       )
     ''');
-    print('Таблица authors создана');
     await db.execute('''
       CREATE TABLE books (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,7 +46,6 @@ class LibraryDatabase {
         FOREIGN KEY (author_id) REFERENCES authors (id)
       )
     ''');
-    print('Таблица books создана');
     await db.execute('''
       CREATE TABLE loans (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,9 +56,10 @@ class LibraryDatabase {
         FOREIGN KEY (book_id) REFERENCES books (id)
       )
     ''');
-    print('Таблица loans создана');
-    print('=== SQLite: база данных готова ===');
+    print('SQLite: база данных успешно создана');
   }
+
+  
 
   Future<void> close() async {
     final db = await instance.database;
