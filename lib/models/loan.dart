@@ -1,14 +1,14 @@
 class Loan {
   final int? id;
   final int bookId;
-  final String readerName;
+  final int readerId;
   final String loanDate;
   final String? returnDate;
 
   Loan({
     this.id,
     required this.bookId,
-    required this.readerName,
+    required this.readerId,
     required this.loanDate,
     this.returnDate,
   });
@@ -17,7 +17,7 @@ class Loan {
     return {
       'id': id,
       'book_id': bookId,
-      'reader_name': readerName,
+      'reader_id': readerId,
       'loan_date': loanDate,
       'return_date': returnDate,
     };
@@ -27,7 +27,7 @@ class Loan {
     return Loan(
       id: map['id'],
       bookId: map['book_id'],
-      readerName: map['reader_name'],
+      readerId: map['reader_id'],
       loanDate: map['loan_date'],
       returnDate: map['return_date'],
     );

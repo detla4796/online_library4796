@@ -47,19 +47,24 @@ class LibraryDatabase {
       )
     ''');
     await db.execute('''
+      CREATE TABLE readers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
       CREATE TABLE loans (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         book_id INTEGER NOT NULL,
-        reader_name TEXT NOT NULL,
+        reader_id INTEGER NOT NULL,
         loan_date TEXT NOT NULL,
         return_date TEXT,
-        FOREIGN KEY (book_id) REFERENCES books (id)
+        FOREIGN KEY (book_id) REFERENCES books (id),
+        FOREIGN KEY (reader_id) REFERENCES readers (id)
       )
     ''');
     print('SQLite: база данных успешно создана');
   }
-
-  
 
   Future<void> close() async {
     final db = await instance.database;
