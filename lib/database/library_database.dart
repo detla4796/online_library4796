@@ -18,6 +18,13 @@ class LibraryDatabase {
     return _database!;
   }
 
+  Database get db {
+    if (_database == null) {
+      throw Exception('Database is not initialized. Call database getter first.');
+    }
+    return _database!;
+  }
+
   Future<Database> _initDB(String fileName) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, fileName);

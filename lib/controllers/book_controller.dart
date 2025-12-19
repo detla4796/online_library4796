@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/library_core.dart';
-import '../models/book.dart';
-import '../models/reader.dart';
+import '../models/database/book.dart';
+import '../models/database/reader.dart';
+import '../models/ui/search_result.dart';
 
 class BookController extends ChangeNotifier {
   final LibraryCore _core = LibraryCore();
@@ -10,6 +11,7 @@ class BookController extends ChangeNotifier {
   List<Reader> readers = [];
   bool isLoading = false;
   String? errorMessage;
+  List<SearchResult> searchResult = [];
 
   Future<void> loadBooks() async {
     try {
@@ -69,5 +71,33 @@ class BookController extends ChangeNotifier {
       errorMessage = 'Ошибка загрузки читателей: $e';
       notifyListeners();
     }
+  }
+
+  Future<void> searchBooks(String query) async {
+    if (query.isEmpty) {
+      searchResult = [];
+      notifyListeners();
+      return;
+    }
+
+    try {
+      isLoading = true;
+      errorMessage = null;
+      notifyListeners();
+      
+      searchResult = await _core.smartSearch(query);
+      notifyListeners();
+    } catch (e) {
+      errorMessage = 'Ошибка поиска: $e';
+      notifyListeners();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void clearSearch() {
+    searchResult = [];
+    notifyListeners();
   }
 }

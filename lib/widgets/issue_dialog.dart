@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/book_controller.dart';
-import '../models/book.dart';
-import '../models/reader.dart';
+import '../models/database/book.dart';
+import '../models/database/reader.dart';
 
 class IssueDialog extends StatefulWidget {
   final Book book;

@@ -1,9 +1,10 @@
 import '../database/library_database.dart';
 import 'package:sqflite/sqflite.dart';
-import '../models/book.dart';
-import '../models/author.dart';
-import '../models/loan.dart';
-import '../models/reader.dart';
+import '../models/database/book.dart';
+import '../models/database/author.dart';
+import '../models/database/loan.dart';
+import '../models/database/reader.dart';
+import '../models/ui/search_result.dart';
 
 class LibraryCore {
   final LibraryDatabase _db = LibraryDatabase.instance;
@@ -31,8 +32,7 @@ class LibraryCore {
 
   Future<bool> isBookAvailable(int bookId) async {
     _validateBookId(bookId);
-    
-    final db = await _db.database;
+    final db = _db.db;
     final result = await db.query(
       'books',
       where: 'id = ? AND status = ?',
@@ -48,8 +48,8 @@ class LibraryCore {
   }) async {
     _validateBookId(bookId);
     _validateReaderId(readerId);
-    
-    final db = await _db.database;
+
+    final db = _db.db;
 
     final available = await isBookAvailable(bookId);
     if (!available) {
@@ -79,7 +79,7 @@ class LibraryCore {
   Future<void> returnBook(int bookId) async {
     _validateBookId(bookId);
     
-    final db = await _db.database;
+    final db = _db.db;
 
     await db.update(
       'loans',
@@ -99,7 +99,7 @@ class LibraryCore {
   }
 
   Future<List<Book>> getAllBooks() async {
-    final db = await _db.database;
+    final db = _db.db;
     final result = await db.query('books');
     return result.map((e) => Book.fromMap(e)).toList();
   }
@@ -107,7 +107,7 @@ class LibraryCore {
   Future<int> addReader(String name) async {
     _validateReaderName(name);
     
-    final db = await _db.database;
+    final db = _db.db;
     return await db.insert(
       'readers',
       {
@@ -117,7 +117,7 @@ class LibraryCore {
   }
 
   Future<List<Reader>> getAllReaders() async {
-    final db = await _db.database;
+    final db = _db.db;
     final result = await db.query('readers');
     return result.map((e) => Reader.fromMap(e)).toList();
   }
@@ -125,7 +125,7 @@ class LibraryCore {
   Future<Loan?> getActiveLoan(int bookId) async {
     _validateBookId(bookId);
     
-    final db = await _db.database;
+    final db = _db.db;
     final result = await db.query(
       'loans',
       where: 'book_id = ? AND return_date IS NULL',
@@ -140,7 +140,7 @@ class LibraryCore {
   Future<Reader?> getReaderById(int readerId) async {
     _validateReaderId(readerId);
     
-    final db = await _db.database;
+    final db = _db.db;
     final result = await db.query(
       'readers',
       where: 'id = ?',
@@ -155,7 +155,7 @@ class LibraryCore {
   Future<Book?> getBookById(int bookId) async {
     _validateBookId(bookId);
     
-    final db = await _db.database;
+    final db = _db.db;
     final result = await db.query(
       'books',
       where: 'id = ?',
@@ -164,20 +164,45 @@ class LibraryCore {
     );
 
     if (result.isEmpty) return null;
-    return Book.fromMap(result.first);
+      return Book.fromMap(result.first);
+    }
+
+    Future<List<SearchResult>> smartSearch(String query) async {
+    _validateSearchQuery(query);
+    
+    final db = _db.db;
+    final searchPattern = '%${query.trim()}%';
+    
+    final result = await db.rawQuery('''
+      SELECT 
+        books.id,
+        books.title,
+        authors.full_name,
+        books.status,
+        readers.name as reader_name
+      FROM books
+      JOIN authors ON books.author_id = authors.id
+      LEFT JOIN loans ON books.id = loans.book_id AND loans.return_date IS NULL
+      LEFT JOIN readers ON loans.reader_id = readers.id
+      WHERE books.title LIKE ? OR authors.full_name LIKE ? OR readers.name LIKE ?
+      ORDER BY books.title
+    ''', [searchPattern, searchPattern, searchPattern]);
+
+    return result.map((e) => SearchResult.fromMap(e)).toList();
   }
 
-  // TODO: smart search:
-  // SELECT books.id, books.title, authors.full_name, readers.name
-  // FROM books
-  // JOIN authors ON books.author_id = authors.id
-  // LEFT JOIN loans ON books.id = loans.book_id
-  // LEFT JOIN readers ON loans.reader_id = readers.id
-  // WHERE books.title LIKE ? OR authors.full_name LIKE ? OR readers.name LIKE ?
+  void _validateSearchQuery(String query) {
+    if (query.trim().isEmpty) {
+      throw ArgumentError('Поисковый запрос не может быть пустым');
+    }
+    if (query.length > 200) {
+      throw ArgumentError('Поисковый запрос слишком длинный');
+    }
+  }
 
   // DEMO DATA
-  Future<void> initDemoData() async {
-    final db = await _db.database;
+  Future<void> initDemoData({bool force = false}) async { // add force parameter for re-initialization if its needed
+    final db = _db.db;
 
     final authorsCount = Sqflite.firstIntValue(
       await db.rawQuery('SELECT COUNT(*) FROM authors')

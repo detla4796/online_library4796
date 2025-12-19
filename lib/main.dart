@@ -12,7 +12,7 @@ void main() async {
   await db.database;
 
   final core = LibraryCore();
-  await core.initDemoData();
+  await core.initDemoData(); // can be re-initialized with force: true
 
   runApp(const MyApp());
 }

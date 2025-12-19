@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/book_controller.dart';
-import '../models/book.dart';
+import '../models/database/book.dart';
 import '../services/library_core.dart';
 
 class ReturnDialog extends StatefulWidget {
