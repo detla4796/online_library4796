@@ -4,7 +4,7 @@ A modern Flutter library management application for tracking books, authors, rea
 
 ## Features
 
-### Current Features ✅
+### Current Features
 
 - **Book Management**
   - View all books in the library
