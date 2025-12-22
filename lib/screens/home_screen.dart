@@ -32,6 +32,9 @@ class HomeScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final book = controller.books[index];
               final isOnShelf = book.status == 'on_shelf';
+              final loanInfo = controller.loanInfoByBook[book.id];
+              final isOverdue = loanInfo?['isOverdue'] == true;
+              final overdueDays = loanInfo?['overdueDays'];
 
               return ListTile(
                 onTap: () {
@@ -48,16 +51,37 @@ class HomeScreen extends StatelessWidget {
                   }
                 },
                 title: Text(book.title),
-                subtitle: Text(
-                  isOnShelf ? 'На полке' : 'Выдана',
-                  style: TextStyle(
-                    color: isOnShelf ? Colors.green : Colors.orange,
-                    fontWeight: FontWeight.bold,
-                  ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isOnShelf ? 'На полке' : 'Выдана',
+                      style: TextStyle(
+                        color: isOnShelf ? Colors.green : Colors.orange,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (isOverdue)
+                      Text(
+                        'Просрочено на $overdueDays дней',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                  ],
                 ),
                 leading: Icon(
-                  isOnShelf ? Icons.book : Icons.bookmark,
-                  color: isOnShelf ? Colors.green : Colors.orange,
+                  isOverdue
+                      ? Icons.warning
+                      : isOnShelf
+                          ? Icons.book
+                          : Icons.bookmark,
+                  color: isOverdue
+                      ? Colors.red
+                      : isOnShelf
+                          ? Colors.green
+                          : Colors.orange,
                 ),
                 trailing: Icon(
                   Icons.arrow_forward_ios,

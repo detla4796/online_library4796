@@ -12,6 +12,7 @@ class BookController extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
   List<SearchResult> searchResult = [];
+  Map<int, Map<String, dynamic>> loanInfoByBook = {};
 
   Future<void> loadBooks() async {
     try {
@@ -20,6 +21,7 @@ class BookController extends ChangeNotifier {
       notifyListeners();
       
       books = await _core.getAllBooks();
+      await loadLoanInfo();
       notifyListeners();
     } catch (e) {
       errorMessage = 'Ошибка загрузки: $e';
@@ -94,6 +96,20 @@ class BookController extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> loadLoanInfo() async {
+    loanInfoByBook.clear();
+
+    for (final book in books) {
+      if (book.status == 'loaned' && book.id != null) {
+        final info = await _core.getLoanInfo(book.id!);
+        if (info != null) {
+          loanInfoByBook[book.id!] = info;
+        }
+      }
+    }
+    notifyListeners();
   }
 
   void clearSearch() {

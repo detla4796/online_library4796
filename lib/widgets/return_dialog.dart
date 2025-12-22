@@ -18,6 +18,8 @@ class ReturnDialog extends StatefulWidget {
 
 class _ReturnDialogState extends State<ReturnDialog> {
   bool isLoading = false;
+  bool isOverdue = false;
+  int overdueDays = 0;
   String? readerName;
   String? loanDate;
 
@@ -33,9 +35,15 @@ class _ReturnDialogState extends State<ReturnDialog> {
 
     if (loan != null) {
       final reader = await core.getReaderById(loan.readerId);
+      final loanDateTime = DateTime.parse(loan.loanDate);
+      final now = DateTime.now();
+      final diffDays = now.difference(loanDateTime).inDays;
+      const loanPeriodDays = 14;
       setState(() {
         readerName = reader?.name ?? 'Неизвестный читатель';
         loanDate = loan.loanDate.split('T')[0]; // only date part
+        isOverdue = diffDays > loanPeriodDays;
+        overdueDays = isOverdue ? diffDays - loanPeriodDays : 0;
       });
     }
   }
@@ -65,6 +73,16 @@ class _ReturnDialogState extends State<ReturnDialog> {
               ),
             ] else
               CircularProgressIndicator(),
+            if (isOverdue) ...[
+              SizedBox(height: 8),
+              Text(
+                'Просрочено на $overdueDays дней',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -1,19 +1,20 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:logger/logger.dart';
 
 class LibraryDatabase {
   static final LibraryDatabase instance = LibraryDatabase._init();
   static Database? _database;
+  static final _logger = Logger();
 
   LibraryDatabase._init();
 
   Future<Database> get database async {
     if (_database != null) {
-      print('SQLite: база данных уже открыта');
+      _logger.i('SQLite: база данных уже открыта');
       return _database!;
     }
-
-    print('SQLite: открытие базы данных');
+    _logger.i('SQLite: открытие базы данных');
     _database = await _initDB('library.db');
     return _database!;
   }
@@ -37,7 +38,7 @@ class LibraryDatabase {
   }
 
   Future<void> _createDB(Database db, int version) async {
-    print('SQLite: база данных создаётся');
+    _logger.i('SQLite: база данных создаётся');
     await db.execute('''
       CREATE TABLE authors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,11 +71,12 @@ class LibraryDatabase {
         FOREIGN KEY (reader_id) REFERENCES readers (id)
       )
     ''');
-    print('SQLite: база данных успешно создана');
+    _logger.i('SQLite: база данных успешно создана');
   }
 
   Future<void> close() async {
     final db = await instance.database;
     db.close();
+    _logger.i('SQLite: база данных закрыта');
   }
 }

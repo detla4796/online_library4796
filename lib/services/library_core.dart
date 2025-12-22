@@ -8,6 +8,7 @@ import '../models/ui/search_result.dart';
 
 class LibraryCore {
   final LibraryDatabase _db = LibraryDatabase.instance;
+  static const int loanPeriodDays = 14;
 
   void _validateBookId(int bookId) {
     if (bookId <= 0) {
@@ -199,6 +200,54 @@ class LibraryCore {
       throw ArgumentError('Поисковый запрос слишком длинный');
     }
   }
+
+  bool isLoanOverdue(Loan loan) {
+    final loanDate = DateTime.parse(loan.loanDate);
+    final now = DateTime.now();
+    return now.difference(loanDate).inDays > loanPeriodDays;
+  }
+
+  int getOverdueDays(Loan loan) {
+    final loanDate = DateTime.parse(loan.loanDate);
+    final now = DateTime.now();
+    final overdueDays = now.difference(loanDate).inDays - loanPeriodDays;
+    return overdueDays > 0 ? overdueDays : 0;
+  }
+
+  DateTime now() => DateTime.now(); // for testing purposes
+
+  Future<Map<String, dynamic>?> getLoanInfo(int bookId) async {
+    _validateBookId(bookId);
+
+    final db = _db.db;
+
+    final result = await db.rawQuery('''
+      SELECT 
+        loans.loan_date,
+        readers.name
+      FROM loans
+      JOIN readers ON loans.reader_id = readers.id
+      WHERE loans.book_id = ?
+        AND loans.return_date IS NULL
+      LIMIT 1
+    ''', [bookId]);
+
+    if (result.isEmpty) return null;
+
+    final loan = Loan.fromMap({
+      'loan_date': result.first['loan_date'],
+      'book_id': bookId,
+      'reader_id': 0,
+    });
+
+    return {
+      'readerName': result.first['name'],
+      'loanDate': loan.loanDate,
+      'isOverdue': isLoanOverdue(loan),
+      'overdueDays': getOverdueDays(loan),
+    };
+  }
+
 
   // DEMO DATA
   Future<void> initDemoData({bool force = false}) async { // add force parameter for re-initialization if its needed
