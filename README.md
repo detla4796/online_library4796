@@ -4,7 +4,7 @@ A modern Flutter library management application for tracking books, authors, rea
 
 ## Features
 
-### Current Features ✅
+### Current Features
 
 - **Book Management**
   - View all books in the library
@@ -191,10 +191,10 @@ await core.initDemoData(force: true);
 ## Dependencies
 
 ```yaml
-    sqflite: ^2.3.0
-    path_provider: ^2.1.2
-    path: ^1.9.0
-    provider: ^6.0.5
+sqflite: ^2.3.0
+path_provider: ^2.1.2
+path: ^1.9.0
+provider: ^6.0.5
 ```
 
 ## Development Notes
