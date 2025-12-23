@@ -3,9 +3,11 @@ import '../services/library_core.dart';
 import '../models/database/book.dart';
 import '../models/database/reader.dart';
 import '../models/ui/search_result.dart';
+import '../services/validation.dart';
 
 class BookController extends ChangeNotifier {
-  final LibraryCore _core = LibraryCore();
+  final LibraryCore _core;
+  BookController(this._core);
   
   List<Book> books = [];
   List<Reader> readers = [];
@@ -33,6 +35,8 @@ class BookController extends ChangeNotifier {
   }
 
   Future<bool> issueBook(int bookId, int readerId) async {
+    Validation.bookId(bookId);
+    Validation.readerId(readerId);
     try {
       final success = await _core.loanBook(
         bookId: bookId,
@@ -54,6 +58,7 @@ class BookController extends ChangeNotifier {
   }
 
   Future<bool> returnBook(int bookId) async {
+    Validation.bookId(bookId);
     try {
       await _core.returnBook(bookId);
       await loadBooks();
@@ -76,6 +81,7 @@ class BookController extends ChangeNotifier {
   }
 
   Future<void> searchBooks(String query) async {
+    Validation.searchQuery(query);
     if (query.isEmpty) {
       searchResult = [];
       notifyListeners();

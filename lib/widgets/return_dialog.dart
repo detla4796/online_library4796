@@ -38,7 +38,7 @@ class _ReturnDialogState extends State<ReturnDialog> {
       final loanDateTime = DateTime.parse(loan.loanDate);
       final now = DateTime.now();
       final diffDays = now.difference(loanDateTime).inDays;
-      const loanPeriodDays = 14;
+      const loanPeriodDays = 1; // *** set 1 day for test, default: 14 days ***
       setState(() {
         readerName = reader?.name ?? 'Неизвестный читатель';
         loanDate = loan.loanDate.split('T')[0]; // only date part

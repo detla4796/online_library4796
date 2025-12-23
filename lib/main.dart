@@ -12,19 +12,24 @@ void main() async {
   await db.database;
 
   final core = LibraryCore();
-  await core.initDemoData(); // can be re-initialized with force: true
+  await core.initDemoData();
 
-  runApp(const MyApp());
+  runApp(
+    MyApp(core: core),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final LibraryCore core;
+
+  const MyApp({super.key, required this.core});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => BookController()..loadBooks(),
+      create: (_) => BookController(core)..loadBooks(),
       child: const MaterialApp(
+        debugShowCheckedModeBanner: false,
         home: HomeScreen(),
       ),
     );

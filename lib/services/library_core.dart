@@ -5,34 +5,14 @@ import '../models/database/author.dart';
 import '../models/database/loan.dart';
 import '../models/database/reader.dart';
 import '../models/ui/search_result.dart';
+import '../services/validation.dart';
 
 class LibraryCore {
   final LibraryDatabase _db = LibraryDatabase.instance;
-  static const int loanPeriodDays = 14;
-
-  void _validateBookId(int bookId) {
-    if (bookId <= 0) {
-      throw ArgumentError('ID книги должен быть больше нуля');
-    }
-  }
-
-  void _validateReaderId(int readerId) {
-    if (readerId <= 0) {
-      throw ArgumentError('ID читателя должен быть больше нуля');
-    }
-  }
-
-  void _validateReaderName(String name) {
-    if (name.trim().isEmpty) {
-      throw ArgumentError('Имя читателя не может быть пустым');
-    }
-    if (name.length > 100) {
-      throw ArgumentError('Имя читателя не может быть больше 100 символов');
-    }
-  }
-
+  static const int loanPeriodDays = 1; // *** set 1 day for test, default: 14 days ***
+  
   Future<bool> isBookAvailable(int bookId) async {
-    _validateBookId(bookId);
+    Validation.bookId(bookId);
     final db = _db.db;
     final result = await db.query(
       'books',
@@ -47,8 +27,8 @@ class LibraryCore {
     required int bookId,
     required int readerId,
   }) async {
-    _validateBookId(bookId);
-    _validateReaderId(readerId);
+    Validation.bookId(bookId);
+    Validation.readerId(readerId);
 
     final db = _db.db;
 
@@ -78,7 +58,7 @@ class LibraryCore {
   }
 
   Future<void> returnBook(int bookId) async {
-    _validateBookId(bookId);
+    Validation.bookId(bookId);
     
     final db = _db.db;
 
@@ -106,7 +86,7 @@ class LibraryCore {
   }
 
   Future<int> addReader(String name) async {
-    _validateReaderName(name);
+    Validation.readerName(name);
     
     final db = _db.db;
     return await db.insert(
@@ -124,7 +104,7 @@ class LibraryCore {
   }
 
   Future<Loan?> getActiveLoan(int bookId) async {
-    _validateBookId(bookId);
+    Validation.bookId(bookId);
     
     final db = _db.db;
     final result = await db.query(
@@ -139,7 +119,7 @@ class LibraryCore {
   }
 
   Future<Reader?> getReaderById(int readerId) async {
-    _validateReaderId(readerId);
+    Validation.readerId(readerId);
     
     final db = _db.db;
     final result = await db.query(
@@ -154,7 +134,7 @@ class LibraryCore {
   }
 
   Future<Book?> getBookById(int bookId) async {
-    _validateBookId(bookId);
+    Validation.bookId(bookId);
     
     final db = _db.db;
     final result = await db.query(
@@ -166,10 +146,10 @@ class LibraryCore {
 
     if (result.isEmpty) return null;
       return Book.fromMap(result.first);
-    }
+  }
 
-    Future<List<SearchResult>> smartSearch(String query) async {
-    _validateSearchQuery(query);
+  Future<List<SearchResult>> smartSearch(String query) async {
+    Validation.searchQuery(query);
     
     final db = _db.db;
     final searchPattern = '%${query.trim()}%';
@@ -192,15 +172,6 @@ class LibraryCore {
     return result.map((e) => SearchResult.fromMap(e)).toList();
   }
 
-  void _validateSearchQuery(String query) {
-    if (query.trim().isEmpty) {
-      throw ArgumentError('Поисковый запрос не может быть пустым');
-    }
-    if (query.length > 200) {
-      throw ArgumentError('Поисковый запрос слишком длинный');
-    }
-  }
-
   bool isLoanOverdue(Loan loan) {
     final loanDate = DateTime.parse(loan.loanDate);
     final now = DateTime.now();
@@ -217,7 +188,7 @@ class LibraryCore {
   DateTime now() => DateTime.now(); // for testing purposes
 
   Future<Map<String, dynamic>?> getLoanInfo(int bookId) async {
-    _validateBookId(bookId);
+    Validation.bookId(bookId);
 
     final db = _db.db;
 
@@ -249,7 +220,7 @@ class LibraryCore {
   }
 
 
-  // DEMO DATA
+  // ** DEMO DATA
   Future<void> initDemoData({bool force = false}) async { // add force parameter for re-initialization if its needed
     final db = _db.db;
 
@@ -279,6 +250,7 @@ class LibraryCore {
       'title': 'Война и мир',
       'author_id': authorId2,
       'status': 'on_shelf',
+
     });
 
     await db.insert('readers', {'name': 'Иван Иванов'});
