@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/book_controller.dart';
 import '../models/database/book.dart';
-import '../services/library_core.dart';
 
 class ReturnDialog extends StatefulWidget {
   final Book book;
@@ -30,20 +29,15 @@ class _ReturnDialogState extends State<ReturnDialog> {
   }
 
   Future<void> _loadLoanInfo() async {
-    final core = LibraryCore();
-    final loan = await core.getActiveLoan(widget.book.id!);
+    final controller = context.read<BookController>();
+    final loan = await controller.getLoanInfo(widget.book.id!);
 
     if (loan != null) {
-      final reader = await core.getReaderById(loan.readerId);
-      final loanDateTime = DateTime.parse(loan.loanDate);
-      final now = DateTime.now();
-      final diffDays = now.difference(loanDateTime).inDays;
-      const loanPeriodDays = 1; // *** set 1 day for test, default: 14 days ***
       setState(() {
-        readerName = reader?.name ?? 'Неизвестный читатель';
-        loanDate = loan.loanDate.split('T')[0]; // only date part
-        isOverdue = diffDays > loanPeriodDays;
-        overdueDays = isOverdue ? diffDays - loanPeriodDays : 0;
+        readerName = loan['readerName'];
+        loanDate = loan['loanDate'].split('T')[0];
+        isOverdue = loan['isOverdue'];
+        overdueDays = loan['overdueDays'];
       });
     }
   }

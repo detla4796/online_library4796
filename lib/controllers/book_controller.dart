@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/library_core.dart';
 import '../models/database/book.dart';
+import '../models/database/author.dart';
 import '../models/database/reader.dart';
 import '../models/ui/search_result.dart';
 import '../services/validation.dart';
@@ -11,6 +12,7 @@ class BookController extends ChangeNotifier {
   
   List<Book> books = [];
   List<Reader> readers = [];
+  List<Author> authors = [];
   bool isLoading = false;
   String? errorMessage;
   List<SearchResult> searchResult = [];
@@ -116,6 +118,133 @@ class BookController extends ChangeNotifier {
       }
     }
     notifyListeners();
+  }
+
+  Future<Map<String, dynamic>?> getLoanInfo(int bookId) async {
+    return _core.getLoanInfo(bookId);
+  }
+
+  Future<void> loadAuthors() async {
+    try {
+      isLoading = true;
+      notifyListeners();
+      authors = await _core.getAllAuthors();
+    } catch (e) {
+      errorMessage = e.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> addBook(String title, int authorId) async {
+    try {
+      await _core.addBook(title, authorId);
+      await loadBooks();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateBook(int bookId, String title, int authorId) async {
+    Validation.bookId(bookId);
+    try {
+      await _core.updateBook(bookId, title, authorId);
+      await loadBooks();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteBook(int bookId) async {
+    Validation.bookId(bookId);
+    try {
+      await _core.deleteBook(bookId);
+      await loadBooks();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> addAuthor(String fullName) async {
+    try {
+      await _core.addAuthor(fullName);
+      await loadAuthors();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteReader(int readerId) async {
+    Validation.readerId(readerId);
+    try {
+      await _core.deleteReader(readerId);
+      await loadReaders();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> addReader(String name) async {
+    try {
+      Validation.readerName(name);
+      await _core.addReader(name);
+      await loadReaders();
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteAuthor(int authorId) async {
+    try {
+      await _core.deleteAuthor(authorId);
+      await loadAuthors();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateAuthor(int authorId, String fullName) async {
+    try {
+      await _core.updateAuthor(authorId, fullName);
+      await loadAuthors();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateReader(int readerId, String name) async {
+    try {
+      await _core.updateReader(readerId, name);
+      await loadReaders();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
   }
 
   void clearSearch() {

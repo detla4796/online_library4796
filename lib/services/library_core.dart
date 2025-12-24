@@ -8,7 +8,8 @@ import '../models/ui/search_result.dart';
 import '../services/validation.dart';
 
 class LibraryCore {
-  final LibraryDatabase _db = LibraryDatabase.instance;
+  final LibraryDatabase _db;
+  LibraryCore(this._db);
   static const int loanPeriodDays = 1; // *** set 1 day for test, default: 14 days ***
   
   Future<bool> isBookAvailable(int bookId) async {
@@ -205,55 +206,105 @@ class LibraryCore {
 
     if (result.isEmpty) return null;
 
-    final loan = Loan.fromMap({
-      'loan_date': result.first['loan_date'],
-      'book_id': bookId,
-      'reader_id': 0,
-    });
+    final loanDate = DateTime.parse(result.first['loan_date'] as String);
 
     return {
       'readerName': result.first['name'],
-      'loanDate': loan.loanDate,
-      'isOverdue': isLoanOverdue(loan),
-      'overdueDays': getOverdueDays(loan),
+      'loanDate': loanDate.toIso8601String(),
+      'isOverdue': isLoanOverdueByDate(loanDate),
+      'overdueDays': getOverdueDaysByDate(loanDate),
     };
   }
 
+  bool isLoanOverdueByDate(DateTime loanDate) {
+    const loanPeriodDays = 1;
+    final now = DateTime.now();
+    return now.difference(loanDate).inDays > loanPeriodDays;
+  }
 
-  // ** DEMO DATA
-  Future<void> initDemoData({bool force = false}) async { // add force parameter for re-initialization if its needed
+  int getOverdueDaysByDate(DateTime loanDate) {
+    const loanPeriodDays = 1;
+    final days = DateTime.now().difference(loanDate).inDays;
+    return days > loanPeriodDays ? days - loanPeriodDays : 0;
+  }
+
+  Future<int> addBook(String title, int authorId) async {
     final db = _db.db;
+    return await db.insert('books', {
+      'title': title,
+      'author_id': authorId,
+      'status': 'on_shelf',
+    });
+  }
 
-    final authorsCount = Sqflite.firstIntValue(
-      await db.rawQuery('SELECT COUNT(*) FROM authors')
+  Future<void> updateBook(int bookId, String title, int authorId) async {
+    Validation.bookId(bookId);
+    final db = _db.db;
+    await db.update(
+      'books',
+      {'title': title, 'author_id': authorId},
+      where: 'id = ?',
+      whereArgs: [bookId],
     );
+  }
 
-    if (authorsCount != 0) {
-      return;
+  Future<void> deleteBook(int bookId) async {
+    Validation.bookId(bookId);
+    final db = _db.db;
+    await db.delete('books', where: 'id = ?', whereArgs: [bookId]);
+  }
+
+  Future<List<Author>> getAllAuthors() async {
+    final db = _db.db;
+    final result = await db.rawQuery('SELECT DISTINCT id, full_name FROM authors ORDER BY full_name');
+    return result.map((map) => Author.fromMap(map)).toList();
+  }
+
+  Future<int> addAuthor(String fullName) async {
+    final name = fullName.trim();
+    if (name.isEmpty) throw Exception('empty author name');
+    final db = _db.db;
+    final existing = await db.query(
+      'authors',
+      where: 'full_name = ?',
+      whereArgs: [name],
+      limit: 1,
+    );
+    if (existing.isNotEmpty) {
+      return existing.first['id'] as int;
     }
+    return await db.insert('authors', {'full_name': name});
+  }
 
-    final authorId1 = await db.insert('authors', {
-      'full_name': 'Фёдор Достоевский',
-    });
+  Future<void> deleteAuthor(int authorId) async {
+    final db = _db.db;
+    await db.delete('authors', where: 'id = ?', whereArgs: [authorId]);
+  }
 
-    final authorId2 = await db.insert('authors', {
-      'full_name': 'Лев Толстой',
-    });
+  Future<void> updateAuthor(int authorId, String fullName) async {
+    final db = _db.db;
+    await db.update(
+      'authors',
+      {'full_name': fullName},
+      where: 'id = ?',
+      whereArgs: [authorId],
+    );
+  }
 
-    await db.insert('books', {
-      'title': 'Преступление и наказание',
-      'author_id': authorId1,
-      'status': 'on_shelf',
-    });
+  Future<void> updateReader(int readerId, String name) async {
+    Validation.readerName(name);
+    final db = _db.db;
+    await db.update(
+      'readers',
+      {'name': name},
+      where: 'id = ?',
+      whereArgs: [readerId],
+    );
+  }
 
-    await db.insert('books', {
-      'title': 'Война и мир',
-      'author_id': authorId2,
-      'status': 'on_shelf',
-
-    });
-
-    await db.insert('readers', {'name': 'Иван Иванов'});
-    await db.insert('readers', {'name': 'Пётр Петров'});
+  Future<void> deleteReader(int readerId) async {
+    Validation.readerId(readerId);
+    final db = _db.db;
+    await db.delete('readers', where: 'id = ?', whereArgs: [readerId]);
   }
 }

@@ -10,9 +10,7 @@ void main() async {
 
   final db = LibraryDatabase.instance;
   await db.database;
-
-  final core = LibraryCore();
-  await core.initDemoData();
+  final core = LibraryCore(db);
 
   runApp(
     MyApp(core: core),
@@ -27,7 +25,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => BookController(core)..loadBooks(),
+      create: (_) => BookController(core)
+        ..loadBooks()
+        ..loadAuthors()
+        ..loadReaders(),
       child: const MaterialApp(
         debugShowCheckedModeBanner: false,
         home: HomeScreen(),
