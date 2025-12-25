@@ -87,28 +87,44 @@ class ReadersTab extends StatelessWidget {
 
   void _showEditDialog(BuildContext context, Reader reader) {
     final nameController = TextEditingController(text: reader.name);
-
+    String? errorMessage;
+    
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Редактировать читателя'),
-        content: TextField(
-          controller: nameController,
-          decoration: InputDecoration(labelText: 'Имя читателя'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Отмена'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await controller.updateReader(reader.id!, nameController.text);
-              Navigator.pop(context);
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('Редактировать читателя'),
+          content: TextField(
+            controller: nameController,
+            decoration: InputDecoration(
+              labelText: 'Имя читателя',
+              errorText: errorMessage,
+            ),
+            onChanged: (_) {
+              if (errorMessage != null) {
+                setState(() => errorMessage = null);
+              }
             },
-            child: Text('Сохранить'),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Отмена'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final text = nameController.text.trim();
+                if (text.isEmpty) {
+                  setState(() => errorMessage = 'Введите имя читателя');
+                  return;
+                }
+                await controller.updateReader(reader.id!, text);
+                Navigator.pop(context);
+              },
+              child: Text('Сохранить'),
+            ),
+          ],
+        ),
       ),
     );
   }

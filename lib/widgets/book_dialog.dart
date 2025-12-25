@@ -25,6 +25,8 @@ class BookDialog extends StatefulWidget {
 class _BookDialogState extends State<BookDialog> {
   late TextEditingController titleController;
   int? selectedAuthorId;
+  String? titleError;
+  String? authorError;
 
   @override
   void initState() {
@@ -58,13 +60,27 @@ class _BookDialogState extends State<BookDialog> {
     );
   }
 
+  void _validateAndSave() {
+    final title = titleController.text.trim();
+    
+    setState(() {
+      titleError = title.isEmpty ? 'Введите название книги' : null;
+      authorError = selectedAuthorId == null ? 'Выберите автора' : null;
+    });
+
+    if (titleError == null && authorError == null) {
+      widget.onSave(title, selectedAuthorId!);
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // dedupe authors by id using controller's current list (most up-to-date)
     final Map<int, Author> byId = {};
     for (final a in widget.controller.authors) {
       if (a.id != null) byId[a.id!] = a;
     }
+    
     final items = byId.values.map((author) {
       return DropdownMenuItem<int>(
         value: author.id,
@@ -72,11 +88,10 @@ class _BookDialogState extends State<BookDialog> {
       );
     }).toList();
 
-    // don't mutate state in build; compute effective selected value
-    final effectiveSelectedAuthorId =
-        (selectedAuthorId != null && items.any((it) => it.value == selectedAuthorId))
-            ? selectedAuthorId
-            : null;
+    final effectiveSelectedAuthorId = (selectedAuthorId != null && 
+        items.any((it) => it.value == selectedAuthorId))
+        ? selectedAuthorId
+        : null;
 
     return AlertDialog(
       title: Text(widget.book == null ? 'Добавить книгу' : 'Редактировать книгу'),
@@ -86,28 +101,53 @@ class _BookDialogState extends State<BookDialog> {
           children: [
             TextField(
               controller: titleController,
-              decoration: InputDecoration(labelText: 'Название книги'),
+              decoration: InputDecoration(
+                labelText: 'Название книги',
+                errorText: titleError,
+              ),
+              onChanged: (_) {
+                if (titleError != null) {
+                  setState(() => titleError = null);
+                }
+              },
             ),
             SizedBox(height: 16),
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: DropdownButton<int>(
-                    value: effectiveSelectedAuthorId,
-                    hint: Text('Выберите автора'),
-                    isExpanded: true,
-                    items: items,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedAuthorId = value;
-                      });
-                    },
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButton<int>(
+                        value: effectiveSelectedAuthorId,
+                        hint: Text('Выберите автора'),
+                        isExpanded: true,
+                        items: items,
+                        onChanged: (value) {
+                          setState(() {
+                            selectedAuthorId = value;
+                            authorError = null;
+                          });
+                        },
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.add),
+                      onPressed: _showAddAuthorDialog,
+                    ),
+                  ],
+                ),
+                if (authorError != null)
+                  Padding(
+                    padding: EdgeInsets.only(left: 12, top: 4),
+                    child: Text(
+                      authorError!,
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.add),
-                  onPressed: _showAddAuthorDialog,
-                ),
               ],
             ),
           ],
@@ -119,16 +159,10 @@ class _BookDialogState extends State<BookDialog> {
           child: Text('Отмена'),
         ),
         ElevatedButton(
-          onPressed: () {
-            if (titleController.text.isNotEmpty && selectedAuthorId != null) {
-              widget.onSave(titleController.text, selectedAuthorId!);
-              Navigator.pop(context);
-            }
-          },
+          onPressed: _validateAndSave,
           child: Text('Сохранить'),
         ),
       ],
     );
   }
 }
-

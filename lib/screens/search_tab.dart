@@ -24,17 +24,24 @@ class _SearchTabState extends State<SearchTab> {
 
   @override
   Widget build(BuildContext context) {
-    final query = _searchController.text.toLowerCase();
+    final query = _searchController.text.toLowerCase().trim();
     
     final results = widget.controller.books.where((book) {
       final author = widget.controller.authors
           .firstWhere((a) => a.id == book.authorId);
       
-      final queryNorm = query.trim().toLowerCase();
       final titleNorm = book.title.trim().toLowerCase();
       final authorNorm = author.fullName.trim().toLowerCase();
       
-      return titleNorm.contains(queryNorm) || authorNorm.contains(queryNorm);
+      String? readerName;
+      if (book.status == 'loaned' && book.id != null) {
+        final loanInfo = widget.controller.loanInfoByBook[book.id];
+        if (loanInfo != null) {
+          readerName = (loanInfo['readerName'] as String?)?.trim().toLowerCase();
+        }
+      }
+      
+      return titleNorm.contains(query) || authorNorm.contains(query) || (readerName != null && readerName.contains(query));
     }).toList();
 
     return Column(
@@ -44,7 +51,7 @@ class _SearchTabState extends State<SearchTab> {
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Поиск по названию или автору',
+              hintText: 'Поиск по названию, автору или читателю',
               prefixIcon: Icon(Icons.search),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             ),
@@ -62,11 +69,29 @@ class _SearchTabState extends State<SearchTab> {
                         final book = results[index];
                         final author = widget.controller.authors
                             .firstWhere((a) => a.id == book.authorId);
-
+                        
+                        final isOnShelf = book.status == 'on_shelf';
+                        final loanInfo = widget.controller.loanInfoByBook[book.id];
+                        
+                        String subtitle = author.fullName;
+                        if (!isOnShelf && loanInfo != null) {
+                          subtitle += ' • У читателя: ${loanInfo['readerName']}';
+                        }
+                        
                         return ListTile(
                           title: Text(book.title),
-                          subtitle: Text(author.fullName),
-                          leading: Icon(Icons.book),
+                          subtitle: Text(subtitle),
+                          leading: Icon(
+                            isOnShelf ? Icons.check_circle : Icons.person,
+                            color: isOnShelf ? Colors.green : Colors.orange,
+                          ),
+                          trailing: Text(
+                            isOnShelf ? 'На полке' : 'Выдана',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 12,
+                            ),
+                          ),
                         );
                       },
                     ),

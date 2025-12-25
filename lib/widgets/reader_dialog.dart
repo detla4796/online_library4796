@@ -16,6 +16,7 @@ class ReaderDialog extends StatefulWidget {
 
 class _ReaderDialogState extends State<ReaderDialog> {
   late TextEditingController nameController;
+  String? errorMessage;
 
   @override
   void initState() {
@@ -29,13 +30,37 @@ class _ReaderDialogState extends State<ReaderDialog> {
     super.dispose();
   }
 
+  void _validateAndSave() {
+    final text = nameController.text.trim();
+    
+    if (text.isEmpty) {
+      setState(() {
+        errorMessage = 'Введите имя читателя';
+      });
+      return;
+    }
+
+    widget.onSave(text);
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.readerName == null ? 'Добавить читателя' : 'Редактировать читателя'),
+      title: Text(widget.readerName == null 
+          ? 'Добавить читателя' 
+          : 'Редактировать читателя'),
       content: TextField(
         controller: nameController,
-        decoration: InputDecoration(labelText: 'Имя читателя'),
+        decoration: InputDecoration(
+          labelText: 'Имя читателя',
+          errorText: errorMessage,
+        ),
+        onChanged: (_) {
+          if (errorMessage != null) {
+            setState(() => errorMessage = null);
+          }
+        },
       ),
       actions: [
         TextButton(
@@ -43,12 +68,7 @@ class _ReaderDialogState extends State<ReaderDialog> {
           child: Text('Отмена'),
         ),
         ElevatedButton(
-          onPressed: () {
-            if (nameController.text.isNotEmpty) {
-              widget.onSave(nameController.text);
-              Navigator.pop(context);
-            }
-          },
+          onPressed: _validateAndSave,
           child: Text('Сохранить'),
         ),
       ],

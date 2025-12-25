@@ -15,6 +15,7 @@ class AuthorDialog extends StatefulWidget {
 class _AuthorDialogState extends State<AuthorDialog> {
   late TextEditingController nameController;
   bool isLoading = false;
+  String? errorMessage;
 
   @override
   void initState() {
@@ -28,14 +29,53 @@ class _AuthorDialogState extends State<AuthorDialog> {
     super.dispose();
   }
 
+  void _validateAndSave() async {
+    final text = nameController.text.trim();
+    
+    if (text.isEmpty) {
+      setState(() {
+        errorMessage = 'Введите имя автора';
+      });
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      await widget.onSave(text);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Ошибка: $e';
+        isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text('Добавить автора'),
-      content: TextField(
-        controller: nameController,
-        decoration: InputDecoration(labelText: 'Полное имя автора'),
-        enabled: !isLoading,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: nameController,
+            decoration: InputDecoration(
+              labelText: 'Полное имя автора',
+              errorText: errorMessage,
+            ),
+            enabled: !isLoading,
+            onChanged: (_) {
+              if (errorMessage != null) {
+                setState(() => errorMessage = null);
+              }
+            },
+          ),
+        ],
       ),
       actions: [
         TextButton(
@@ -43,15 +83,7 @@ class _AuthorDialogState extends State<AuthorDialog> {
           child: Text('Отмена'),
         ),
         ElevatedButton(
-          onPressed: isLoading
-              ? null
-              : () async {
-                  if (nameController.text.isNotEmpty) {
-                    setState(() => isLoading = true);
-                    await widget.onSave(nameController.text);
-                    if (mounted) Navigator.pop(context);
-                  }
-                },
+          onPressed: isLoading ? null : _validateAndSave,
           child: Text('Добавить'),
         ),
       ],
