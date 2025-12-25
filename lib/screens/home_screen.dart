@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/book_controller.dart';
+import '../services/database_export.dart'; // <- ЭТА СТРОКА ОБЯЗАТЕЛЬНА!
 import 'books_tab.dart';
 import 'search_tab.dart';
 import 'readers_tab.dart';
@@ -27,23 +28,52 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _exportDatabase() async {
+    try {
+      final exportPath = await DatabaseExport.exportToDownloads();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('БД экспортирована в Downloads!\n$exportPath'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ошибка экспорта: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('📚 Delta Shelf'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.download),
+            tooltip: 'Экспортировать БД',
+            onPressed: _exportDatabase,
+          ),
+        ],
       ),
       body: Consumer<BookController>(
         builder: (context, controller, _) {
           if (controller.isLoading) {
             return Center(child: CircularProgressIndicator());
           }
-
           if (controller.errorMessage != null) {
             return Center(child: Text('Ошибка: ${controller.errorMessage}'));
           }
-
           return IndexedStack(
             index: _selectedIndex,
             children: [
