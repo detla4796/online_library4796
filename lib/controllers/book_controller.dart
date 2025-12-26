@@ -170,6 +170,9 @@ class BookController extends ChangeNotifier {
       return true;
     } catch (e) {
       errorMessage = e.toString();
+      if (errorMessage!.startsWith('Exception: ')) {
+        errorMessage = errorMessage!.substring('Exception: '.length);
+      }
       notifyListeners();
       return false;
     }

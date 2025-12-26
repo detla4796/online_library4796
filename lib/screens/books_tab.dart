@@ -100,20 +100,43 @@ class BooksTab extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Удалить книгу?'),
-        content: Text('Вы уверены?'),
+        content: Text(
+          book.status == 'loaned'
+              ? 'Невозможно удалить книгу: она не возвращена'
+              : 'Вы уверены, что хотите удалить "${book.title}"?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text('Отмена'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              controller.deleteBook(book.id!);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Удалить', style: TextStyle(color: Colors.white)),
-          ),
+          if (book.status != 'loaned')
+            ElevatedButton(
+              onPressed: () async {
+                final success = await controller.deleteBook(book.id!);
+                Navigator.pop(context);
+                
+                if (context.mounted) {
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Книга удалена успешно'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(controller.errorMessage ?? 'Ошибка удаления'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: Text('Удалить', style: TextStyle(color: Colors.white)),
+            ),
         ],
       ),
     );

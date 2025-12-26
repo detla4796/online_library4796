@@ -251,6 +251,16 @@ class LibraryCore {
   Future<void> deleteBook(int bookId) async {
     Validation.bookId(bookId);
     final db = _db.db;
+    
+    final book = await getBookById(bookId);
+    if (book == null) {
+      throw Exception('Книга не найдена');
+    }
+    
+    if (book.status == 'loaned') {
+      throw Exception('Невозможно удалить книгу: книга не возвращена');
+    }
+    
     await db.delete('books', where: 'id = ?', whereArgs: [bookId]);
   }
 
